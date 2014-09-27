@@ -11,7 +11,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Every Vagrant virtual environment requires a box to build off of.
   config.vm.box = "chef/ubuntu-14.04"
-
+  config.vm.synced_folder "salt", "/srv/salt"
+  config.vm.synced_folder "formulas", "/srv/formulas"
+  config.vm.synced_folder "reactor", "/srv/reactor"
+  config.vm.synced_folder "pillar", "/srv/pillar"
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
   # `vagrant box outdated`. This is not recommended.
