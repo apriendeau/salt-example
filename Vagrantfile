@@ -53,9 +53,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision :salt do |salt|
     salt.install_master = true
     salt.install_type   = "stable"
-    salt.master_config  = "config/salt/master"
-    salt.minion_config  = "config/salt/minion"
+    salt.master_config = "config/salt/master"
+    salt.minion_config = "config/salt/minion"
   end
+
+  config.vm.provision "shell", inline: "sudo service salt-minion restart"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.

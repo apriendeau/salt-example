@@ -1,3 +1,5 @@
 base:
   '*':
+    - elasticsearch
+  'node-*':
     - node
