@@ -1,3 +1,4 @@
+{% set elasticsearch = pillar.get('elasticsearch', {}) -%}
 ##################### Elasticsearch Configuration Example #####################
 
 # This file contains an overview of various configuration settings,
@@ -29,54 +30,24 @@
 # Cluster name identifies your cluster for auto-discovery. If you're running
 # multiple clusters on the same network, make sure you're using unique names.
 #
-#cluster.name: elasticsearch
+{% set cluster_name = elasticsearch.get('cluster', {}).get('name', 'elasticsearch') -%}
+cluster.name: {{ cluster_name }}
 
 
 #################################### Node #####################################
-
+{% set node = elasticsearch.get('node', {}) -%}
 # Node names are generated dynamically on startup, so you're relieved
 # from configuring them manually. You can tie this node to a specific name:
 #
-#node.name: "Franz Kafka"
+{% set node_name = node.get('name', '') -%}
+{% if node_name -%}
+node.name: {{ node_name }}
+{% endif %}
 
-# Every node can be configured to allow or deny being eligible as the master,
-# and to allow or deny to store the data.
-#
-# Allow this node to be eligible as a master node (enabled by default):
-#
-#node.master: true
-#
-# Allow this node to store data (enabled by default):
-#
-#node.data: true
-
-# You can exploit these settings to design advanced cluster topologies.
-#
-# 1. You want this node to never become a master node, only to hold data.
-#    This will be the "workhorse" of your cluster.
-#
-#node.master: false
-#node.data: true
-#
-# 2. You want this node to only serve as a master: to not store any data and
-#    to have free resources. This will be the "coordinator" of your cluster.
-#
-#node.master: true
-#node.data: false
-#
-# 3. You want this node to be neither master nor data node, but
-#    to act as a "search load balancer" (fetching data from nodes,
-#    aggregating results, etc.)
-#
-#node.master: false
-#node.data: false
-
-# Use the Cluster Health API [http://localhost:9200/_cluster/health], the
-# Node Info API [http://localhost:9200/_nodes] or GUI tools
-# such as <http://www.elasticsearch.org/overview/marvel/>,
-# <http://github.com/karmi/elasticsearch-paramedic>,
-# <http://github.com/lukas-vlcek/bigdesk> and
-# <http://mobz.github.com/elasticsearch-head> to inspect the cluster state.
+{% set master = node.get('master', 'true') -%}
+node.master: {{ master }}
+{% set data = node.get('data', 'true') -%}
+node.data: {{ data }}
 
 # A node can have generic attributes associated with it, which can later be used
 # for customized shard allocation filtering, or allocation awareness. An attribute
@@ -90,53 +61,12 @@
 
 
 #################################### Index ####################################
+{% set index = elasticsearch.get('index', {}) -%}
+{% set number_of_replicas = index.get('number_of_replicas', 1) -%}
+{% set number_of_shards = index.get('number_of_shards', 5) -%}
 
-# You can set a number of options (such as shard/replica options, mapping
-# or analyzer definitions, translog settings, ...) for indices globally,
-# in this file.
-#
-# Note, that it makes more sense to configure index settings specifically for
-# a certain index, either when creating it or by using the index templates API.
-#
-# See <http://elasticsearch.org/guide/en/elasticsearch/reference/current/index-modules.html> and
-# <http://elasticsearch.org/guide/en/elasticsearch/reference/current/indices-create-index.html>
-# for more information.
-
-# Set the number of shards (splits) of an index (5 by default):
-#
-#index.number_of_shards: 5
-
-# Set the number of replicas (additional copies) of an index (1 by default):
-#
-#index.number_of_replicas: 1
-
-# Note, that for development on a local machine, with small indices, it usually
-# makes sense to "disable" the distributed features:
-#
-#index.number_of_shards: 1
-#index.number_of_replicas: 0
-
-# These settings directly affect the performance of index and search operations
-# in your cluster. Assuming you have enough machines to hold shards and
-# replicas, the rule of thumb is:
-#
-# 1. Having more *shards* enhances the _indexing_ performance and allows to
-#    _distribute_ a big index across machines.
-# 2. Having more *replicas* enhances the _search_ performance and improves the
-#    cluster _availability_.
-#
-# The "number_of_shards" is a one-time setting for an index.
-#
-# The "number_of_replicas" can be increased or decreased anytime,
-# by using the Index Update Settings API.
-#
-# Elasticsearch takes care about load balancing, relocating, gathering the
-# results from nodes, etc. Experiment with different settings to fine-tune
-# your setup.
-
-# Use the Index Status API (<http://localhost:9200/A/_status>) to inspect
-# the index status.
-
+index.number_of_replicas: {{ number_of_replicas }}
+index.number_of_shards: {{ number_of_shards }}
 
 #################################### Paths ####################################
 
@@ -293,59 +223,56 @@
 
 
 ################################## Discovery ##################################
+{% set discovery = elasticsearch.get('discovery', {}) -%}
 
-# Discovery infrastructure ensures nodes can be found within a cluster
-# and master node is elected. Multicast discovery is the default.
+{% set zen = discovery.get('zen', {}) -%}
+{% set minimum_master_nodes = zen.get('minimum_master_nodes', 1) -%}
+discovery.zen.minimum_master_nodes: {{ minimum_master_nodes }}
 
-# Set to ensure a node sees N other master eligible nodes to be considered
-# operational within the cluster. Its recommended to set it to a higher value
-# than 1 when running more than 2 nodes in the cluster.
-#
-#discovery.zen.minimum_master_nodes: 1
+{% set ping = zen.get('ping', {}) -%}
+{% set multicast = ping.get('multicast', 'true') -%}
+discovery.zen.ping.multicast.enabled: {{ multicast }}
 
-# Set the time to wait for ping responses from other nodes when discovering.
-# Set this option to a higher value on a slow or congested network
-# to minimize discovery failures:
-#
-#discovery.zen.ping.timeout: 3s
+{% set timeout = ping.get('timeout') -%}
+{% if timeout -%}
+discovery.zen.ping.timeout: {{ timeout }}
+{% endif %}
+{% set unicast_hosts = ping.get('timeout', []) -%}
+{% if unicast_hosts.count(unicast_hosts) > 0 -%}
+discovery.zen.ping.unicast.hosts: {{ unicast_hosts }}
+{% endif %}
 
-# For more information, see
-# <http://elasticsearch.org/guide/en/elasticsearch/reference/current/modules-discovery-zen.html>
+{% set discovery_type = discovery.get('type') -%}
+{% if discovery_type and discovery_type == "aws" -%}
+discovery:
+  type: {{ discovery_type }}
+{% endif %}
 
-# Unicast discovery allows to explicitly control which nodes will be used
-# to discover the cluster. It can be used when multicast is not present,
-# or to restrict the cluster communication-wise.
-#
-# 1. Disable multicast discovery (enabled by default):
-#
-#discovery.zen.ping.multicast.enabled: false
-#
-# 2. Configure an initial list of master nodes in the cluster
-#    to perform discovery when new nodes (master or data) are started:
-#
-#discovery.zen.ping.unicast.hosts: ["host1", "host2:port"]
+################################## Cloud ####################################
+{% set aws = elasticsearch.get('cloud', {}).get('aws', {}) -%}
+{% set aws_key = elasticsearch.get('access_key') -%}
+{% set aws_secret = elasticsearch.get('secret_key') -%}
 
-# EC2 discovery allows to use AWS EC2 API in order to perform discovery.
-#
-# You have to install the cloud-aws plugin for enabling the EC2 discovery.
-#
-# For more information, see
-# <http://elasticsearch.org/guide/en/elasticsearch/reference/current/modules-discovery-ec2.html>
-#
-# See <http://elasticsearch.org/tutorials/elasticsearch-on-ec2/>
-# for a step-by-step tutorial.
+{% if aws_key and aws_secret -%}
+cloud:
+  aws:
+    access_key: {{ aws_key }}
+    secret_key: {{ aws_secret }}
+{% endif %}
 
-# GCE discovery allows to use Google Compute Engine API in order to perform discovery.
-#
-# You have to install the cloud-gce plugin for enabling the GCE discovery.
-#
-# For more information, see <https://github.com/elasticsearch/elasticsearch-cloud-gce>.
 
-# Azure discovery allows to use Azure API in order to perform discovery.
-#
-# You have to install the cloud-azure plugin for enabling the Azure discovery.
-#
-# For more information, see <https://github.com/elasticsearch/elasticsearch-cloud-azure>.
+################################## Gateway ##################################
+{% set gateway = elasticsearch.get('gateway', {}) -%}
+{% set gateway_type = gateway.get('type') -%}
+{% set gateway_s3_bucket = gateway.get('s3', {}).get('bucket') -%}
+
+{% if gateway_type and gateway_s3_bucket -%}
+gateway:
+  type: {{ gateway_type }}
+  s3:
+    bucket: {{ gateway_s3_bucket }}
+{% endif %}
+
 
 ################################## Slow Log ##################################
 
@@ -375,11 +302,3 @@
 #monitor.jvm.gc.old.warn: 10s
 #monitor.jvm.gc.old.info: 5s
 #monitor.jvm.gc.old.debug: 2s
-
-################################## Security ################################
-
-# Uncomment if you want to enable JSONP as a valid return transport on the
-# http server. With this enabled, it may pose a security risk, so disabling
-# it unless you need it is recommended (it is disabled by default).
-#
-#http.jsonp.enable: true

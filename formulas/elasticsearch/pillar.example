@@ -1,0 +1,32 @@
+elasticsearch:
+  # if you change the version, make sure you change the ec2
+  # version to the correct one that corelates with the
+  # with the correct version of elasticsearch
+  version: "1.3" # default: "1.3"
+  ec2_version: "2.3.0" # default: "2.3.0"
+  cluster:
+    name: "elasticsearch" # default: "elasticsearch"
+  node:
+    name: "Franz Kafka" # remove the field if you want the random names again
+    master: true # default: true
+    data: true # default: true
+  index:
+    number_of_replicas: 3 # default: 1
+    number_of_shards: 6 # default: 5
+  discovery:
+    zen:
+      minimum_master_nodes: 3 # default: 1
+      ping:
+        multicast: true # default: true
+        timeout: 3s # default: disabled
+        # unicast_hosts: # default: [] === disabled
+        #   - 127.0.0.1
+    type: "ec2" # nothing
+  cloud:
+    aws:
+      access_key: AKVAIQBF2RECL7FJWGJQ
+      secret_key: vExyMThREXeRMm/b/LRzEB8jWwvzQeXgjqMX+6br
+  gateway:
+    type: "s3"
+    s3:
+      bucket: "s3_bucket"

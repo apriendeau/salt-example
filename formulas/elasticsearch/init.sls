@@ -1,9 +1,16 @@
 {% set elasticsearch = pillar.get('elasticsearch', {}) -%}
 {% set version = elasticsearch.get('version', '1.3') -%}
+{% set conf_dir = elasticsearch.get('conf_dir', '/etc/elasticsearch') -%}
+{% set conf_template = elasticsearch.get('conf_template', 'salt://elasticsearch/templates/elasticsearch.jinja') -%}
+
 pre-requirements:
   pkg.installed:
     - names:
       - base
+
+install-java:
+  pkg.installed:
+    - name: openjdk-7-jdk
 
 get-elasticsearch-key:
   cmd.run:
@@ -15,17 +22,38 @@ elasticsearch_repo:
     - contents: deb http://packages.elasticsearch.org/elasticsearch/{{ version }}/debian stable main
 
 
-elasticsearch_soft:
+elasticsearch_install:
   pkg.installed:
     - name: elasticsearch
     - require:
       - file: elasticsearch_repo
 
-# update-apt:
-#   module.run:
-#     - name: pkg.refresh_db
-#
-# install_elasticsearch:
-#   module.run:
-#     - name: pkg.install
-#     - opts: ["elasticsearch"]
+{{ conf_dir }}/elasticsearch.yml:
+  file:
+    - managed
+    - template: jinja
+    - user: root
+    - mode: 0644
+    - source: {{ conf_template }}
+
+set-heapsize:
+  file:
+    - sed
+    - name: /etc/default/elasticsearch
+    - before: '#ES_HEAP_SIZE=2g'
+    - after: ES_HEAP_SIZE={{ (grains['mem_total']/2)|round|int }}m
+    - require:
+      - pkg: elasticsearch
+
+set-data-directory:
+  file:
+    - sed
+    - name: /etc/default/elasticsearch
+    - before: '#DATA_DIR=/var/lib/elasticsearch'
+    - after: DATA_DIR=/var/lib/elasticsearch
+    - require:
+      - pkg: elasticsearch
+
+reload-elasticsearch:
+  cmd.run:
+    - name: 'SERVICE=`which service`; $SERVICE elasticsearch restart'
