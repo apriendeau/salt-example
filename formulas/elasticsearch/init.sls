@@ -3,11 +3,10 @@
 {% set conf_dir = elasticsearch.get('conf_dir', '/etc/elasticsearch') -%}
 {% set conf_template = elasticsearch.get('conf_template', 'salt://elasticsearch/templates/elasticsearch.jinja') -%}
 
-pre-requirements:
+elasticsearch-pre-requirements:
   pkg.installed:
     - names:
       - base
-      - java
 
 get-elasticsearch-key:
   cmd.run:
